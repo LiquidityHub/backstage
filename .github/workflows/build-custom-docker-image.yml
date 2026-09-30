@@ -3,17 +3,6 @@ name: Build and push custom Backstage image
 on:
   push:
     branches: [main, master]
-    paths:
-      - '.github/workflows/build-custom-docker-image.yml'
-      - '.dockerignore'
-      - 'app-config*.yaml'
-      - 'packages/app/**'
-      - 'packages/backend/**'
-      - 'packages/**'
-      - 'plugins/**'
-      - 'yarn.lock'
-      - 'package.json'
-      - '.yarn/**'
   workflow_dispatch:
 
 permissions:
@@ -38,6 +27,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image name
+        id: image
+        env:
+          REGISTRY: ghcr.io
+          IMAGE_OWNER: ${{ github.repository_owner }}
+        run: echo "name=${REGISTRY}/${IMAGE_OWNER,,}/backstage-custom" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -45,5 +41,5 @@ jobs:
           file: packages/backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/backstage-custom:latest
-            ghcr.io/${{ github.repository_owner }}/backstage-custom:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}

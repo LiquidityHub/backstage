@@ -31,7 +31,7 @@ import {
   oauthRequestApiRef,
 } from '@backstage/frontend-plugin-api';
 import { SignInPage } from '@backstage/core-components';
-import { SignInPageBlueprint } from '@backstage/plugin-app-react';
+import { appPlugin } from '@backstage/plugin-app';
 import { pagesPlugin } from './examples/pagesPlugin';
 import notFoundErrorPage from './examples/notFoundErrorPageExtension';
 import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
@@ -91,21 +91,25 @@ const keycloakAuthApi = ApiBlueprint.make({
     }),
 });
 
-const keycloakSignInPage = SignInPageBlueprint.make({
-  params: {
-    loader: async () => props =>
-      (
-        <SignInPage
-          {...props}
-          provider={{
-            id: 'keycloak-auth-provider',
-            title: 'Keycloak',
-            message: 'Sign in using Keycloak',
-            apiRef: keycloakAuthApiRef,
-          }}
-        />
-      ),
-  },
+const appPluginOverride = appPlugin.withOverrides({
+  extensions: [
+    appPlugin.getExtension('sign-in-page:app').override({
+      params: {
+        loader: async () => props =>
+          (
+            <SignInPage
+              {...props}
+              provider={{
+                id: 'keycloak-auth-provider',
+                title: 'Keycloak',
+                message: 'Sign in using Keycloak',
+                apiRef: keycloakAuthApiRef,
+              }}
+            />
+          ),
+      },
+    }),
+  ],
 });
 
 /**
@@ -150,6 +154,7 @@ const collectedLegacyPlugins = convertLegacyAppRoot(
 
 const app = createApp({
   features: [
+    appPluginOverride,
     customizedCatalog,
     pagesPlugin,
     convertedTechdocsPlugin,
@@ -163,7 +168,7 @@ const app = createApp({
     appModuleScaffolder,
     createFrontendModule({
       pluginId: 'app',
-      extensions: [keycloakAuthApi, keycloakSignInPage],
+      extensions: [keycloakAuthApi],
     }),
     ...collectedLegacyPlugins,
   ],

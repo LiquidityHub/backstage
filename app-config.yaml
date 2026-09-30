@@ -452,6 +452,18 @@ auth:
   # session:
   #   secret: custom session secret
   providers:
+    # Set the AUTH_KEYCLOAK_* variables in the runtime environment. The Keycloak
+    # client must allow <backend-url>/api/auth/keycloak/handler/frame as a
+    # redirect URI.
+    keycloak:
+      development:
+        clientId: ${AUTH_KEYCLOAK_CLIENT_ID}
+        clientSecret: ${AUTH_KEYCLOAK_CLIENT_SECRET}
+        baseUrl: ${AUTH_KEYCLOAK_BASE_URL}
+        realm: ${AUTH_KEYCLOAK_REALM}
+        signIn:
+          resolvers:
+            - resolver: preferredUsernameMatchingUserEntityName
     google:
       development:
         clientId: ${AUTH_GOOGLE_CLIENT_ID}

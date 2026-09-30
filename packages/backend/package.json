@@ -30,6 +30,7 @@
     "test": "backstage-cli package test"
   },
   "dependencies": {
+    "@backstage-community/plugin-auth-backend-module-keycloak-provider": "^0.6.0",
     "@backstage/backend-defaults": "workspace:^",
     "@backstage/backend-plugin-api": "workspace:^",
     "@backstage/catalog-model": "workspace:^",

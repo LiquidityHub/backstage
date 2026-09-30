@@ -1,16 +1,19 @@
 # This dockerfile builds an image for the backend package.
 # It should be executed with the root of the repo as docker context.
 #
-# Before building this image, be sure to have run the following commands in the repo root:
-#
-# yarn install
-# yarn tsc
-# yarn build:backend
-#
-# Host build steps (yarn install, yarn build:backend) must use the same
-# Node version as the FROM image below. Mismatched versions break native modules.
-#
-# Once the commands have been run, you can build the image using `yarn build-image`
+# The build happens inside Docker so CI only needs Docker Buildx. This includes
+# third-party backend modules declared in packages/backend/package.json.
+FROM node:24-trixie-slim AS build
+
+WORKDIR /app
+
+COPY . .
+
+RUN --mount=type=cache,target=/root/.yarn/berry/cache,sharing=locked \
+    corepack enable && \
+    yarn install --immutable && \
+    yarn tsc && \
+    yarn build:backend
 
 FROM node:24-trixie-slim
 
@@ -34,6 +37,7 @@ RUN pip3 install mkdocs-techdocs-core==1.1.7
 # From here on we use the least-privileged `node` user to run the backend.
 WORKDIR /app
 RUN chown node:node /app
+RUN mkdir -p /home/node/.yarn/berry && chown -R node:node /home/node/.yarn
 USER node
 
 
@@ -41,20 +45,20 @@ USER node
 ENV NODE_ENV=production
 
 # Copy over Yarn 3 configuration, release, and plugins
-COPY --chown=node:node .yarn ./.yarn
-COPY --chown=node:node .yarnrc.yml ./
+COPY --from=build --chown=node:node /app/.yarn ./.yarn
+COPY --from=build --chown=node:node /app/.yarnrc.yml ./
 
 # Copy repo skeleton first, to avoid unnecessary docker cache invalidation.
 # The skeleton contains the package.json of each package in the monorepo,
 # and along with yarn.lock and the root package.json, that's enough to run yarn install.
-COPY --chown=node:node yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
+COPY --from=build --chown=node:node /app/yarn.lock /app/package.json /app/packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
 
 RUN --mount=type=cache,target=/home/node/.yarn/berry/cache,sharing=locked,uid=1000,gid=1000 \
     yarn workspaces focus --all --production
 
 # Then copy the rest of the backend bundle, along with any other files we might want.
-COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
+COPY --from=build --chown=node:node /app/packages/backend/dist/bundle.tar.gz /app/app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 
 CMD ["node", "packages/backend", "--config", "app-config.yaml"]

@@ -31,7 +31,8 @@ import {
   oauthRequestApiRef,
 } from '@backstage/frontend-plugin-api';
 import { SignInPage } from '@backstage/core-components';
-import { appPlugin } from '@backstage/plugin-app';
+import appPlugin from '@backstage/plugin-app';
+import type { SignInPageProps } from '@backstage/plugin-app-react';
 import { pagesPlugin } from './examples/pagesPlugin';
 import notFoundErrorPage from './examples/notFoundErrorPageExtension';
 import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
@@ -95,7 +96,7 @@ const appPluginOverride = appPlugin.withOverrides({
   extensions: [
     appPlugin.getExtension('sign-in-page:app').override({
       params: {
-        loader: async () => props =>
+        loader: async () => (props: SignInPageProps) =>
           (
             <SignInPage
               {...props}

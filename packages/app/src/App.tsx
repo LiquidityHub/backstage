@@ -15,24 +15,8 @@
  */
 
 import { createApp } from '@backstage/frontend-defaults';
-import { OAuth2 } from '@backstage/core-app-api';
-import {
-  BackstageIdentityApi,
-  OpenIdConnectApi,
-  ProfileInfoApi,
-  SessionApi,
-} from '@backstage/core-plugin-api';
-import {
-  ApiBlueprint,
-  configApiRef,
-  createFrontendModule,
-  createApiRef,
-  discoveryApiRef,
-  oauthRequestApiRef,
-} from '@backstage/frontend-plugin-api';
-import { SignInPage } from '@backstage/core-components';
-import appPlugin from '@backstage/plugin-app';
-import type { SignInPageProps } from '@backstage/plugin-app-react';
+import { createFrontendModule } from '@backstage/frontend-plugin-api';
+import { appModuleKeycloak } from './modules/appModuleKeycloak';
 import { pagesPlugin } from './examples/pagesPlugin';
 import notFoundErrorPage from './examples/notFoundErrorPageExtension';
 import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
@@ -59,59 +43,6 @@ import { appModuleHome } from './modules/appModuleHome';
 import { appModuleScaffolder } from './modules/appModuleScaffolder';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import InfoIcon from '@material-ui/icons/Info';
-
-const keycloakAuthApiRef = createApiRef<
-  OpenIdConnectApi & ProfileInfoApi & BackstageIdentityApi & SessionApi
->({
-  id: 'auth.keycloak',
-});
-
-const keycloakAuthApi = ApiBlueprint.make({
-  name: 'keycloak',
-  params: defineParams =>
-    defineParams({
-      api: keycloakAuthApiRef,
-      deps: {
-        discoveryApi: discoveryApiRef,
-        oauthRequestApi: oauthRequestApiRef,
-        configApi: configApiRef,
-      },
-      factory: ({ discoveryApi, oauthRequestApi, configApi }) =>
-        OAuth2.create({
-          configApi,
-          discoveryApi,
-          oauthRequestApi,
-          environment: configApi.getOptionalString('auth.environment'),
-          provider: {
-            id: 'keycloak',
-            title: 'Keycloak',
-            icon: () => null,
-          },
-          defaultScopes: ['openid', 'profile', 'email'],
-        }),
-    }),
-});
-
-const appPluginOverride = appPlugin.withOverrides({
-  extensions: [
-    appPlugin.getExtension('sign-in-page:app').override({
-      params: {
-        loader: async () => (props: SignInPageProps) =>
-          (
-            <SignInPage
-              {...props}
-              provider={{
-                id: 'keycloak-auth-provider',
-                title: 'Keycloak',
-                message: 'Sign in using Keycloak',
-                apiRef: keycloakAuthApiRef,
-              }}
-            />
-          ),
-      },
-    }),
-  ],
-});
 
 /**
  * TechDocs does support the new frontend system so this conversion is not
@@ -155,7 +86,7 @@ const collectedLegacyPlugins = convertLegacyAppRoot(
 
 const app = createApp({
   features: [
-    appPluginOverride,
+    appModuleKeycloak,
     customizedCatalog,
     pagesPlugin,
     convertedTechdocsPlugin,
@@ -167,10 +98,6 @@ const app = createApp({
     appModuleNav,
     appModuleHome,
     appModuleScaffolder,
-    createFrontendModule({
-      pluginId: 'app',
-      extensions: [keycloakAuthApi],
-    }),
     ...collectedLegacyPlugins,
   ],
   advanced: {

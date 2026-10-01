@@ -17,11 +17,12 @@
 import ReactDOM from 'react-dom/client';
 import { createApp } from '@backstage/frontend-defaults';
 import { appModulePublicSignIn } from '@backstage/plugin-app/alpha';
+import { appModuleKeycloak } from './modules/appModuleKeycloak';
 
 import '@backstage/ui/css/styles.css';
 
 const app = createApp({
-  features: [appModulePublicSignIn],
+  features: [appModuleKeycloak, appModulePublicSignIn],
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(app.createRoot());

@@ -27,11 +27,6 @@ app:
 
   packageName: example-app
 
-  routes:
-    bindings:
-      catalog.viewTechDoc: techdocs.docRoot
-      org.catalogIndex: catalog.catalogIndex
-
   pluginOverrides:
     - match:
         pluginId: pages

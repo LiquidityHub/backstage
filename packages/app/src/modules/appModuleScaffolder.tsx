@@ -16,11 +16,23 @@
 
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { SwappableComponentBlueprint } from '@backstage/plugin-app-react';
-import { TemplateCard } from '@backstage/plugin-scaffolder-react/alpha';
+import {
+  FormFieldBlueprint,
+  TemplateCard,
+} from '@backstage/plugin-scaffolder-react/alpha';
+import { DynamicStandTagPickerField } from './DynamicStandTagPicker';
+
+const dynamicStandTagPickerFormField = FormFieldBlueprint.make({
+  name: 'dynamic-stand-tag-picker',
+  params: {
+    field: () => Promise.resolve(DynamicStandTagPickerField),
+  },
+});
 
 export const appModuleScaffolder = createFrontendModule({
   pluginId: 'app',
   extensions: [
+    dynamicStandTagPickerFormField,
     SwappableComponentBlueprint.make({
       name: 'scaffolder-template-card',
       params: defineParams =>

@@ -237,9 +237,10 @@ export const dynamicStandsModule = createBackendModule({
     registerInit({
       deps: {
         config: coreServices.rootConfig,
+        httpRouter: coreServices.httpRouter,
         scaffolder: scaffolderActionsExtensionPoint,
       },
-      async init({ config, scaffolder }) {
+      async init({ config, httpRouter, scaffolder }) {
         const github = config
           .getConfigArray('integrations.github')
           .find(item => item.getString('host') === 'github.com');
@@ -253,6 +254,29 @@ export const dynamicStandsModule = createBackendModule({
           createListContainerTagsAction(token),
           createDynamicStandAction(token),
         );
+        httpRouter.addAuthPolicy({
+          path: '/dynamic-stands/tags',
+          allow: 'user-cookie',
+        });
+        httpRouter.use(async (request, response, next) => {
+          if (request.path !== '/dynamic-stands/tags') {
+            next();
+            return;
+          }
+          try {
+            const [djangoTags, frontTags] = await Promise.all([
+              getContainerTags(
+                token,
+                'manara-development',
+                'core_backend-django',
+              ),
+              getContainerTags(token, 'liquidityhub-finance', 'front_fsd'),
+            ]);
+            response.json({ djangoTags, frontTags });
+          } catch (error) {
+            next(error);
+          }
+        });
       },
     });
   },

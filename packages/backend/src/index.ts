@@ -19,6 +19,7 @@ import {
   coreServices,
   createBackendFeatureLoader,
 } from '@backstage/backend-plugin-api';
+import { dynamicStandsModule } from './dynamicStandsModule';
 
 const backend = createBackend();
 
@@ -60,6 +61,7 @@ backend.add(
 backend.add(import('@backstage/plugin-permission-backend'));
 backend.add(import('@backstage/plugin-proxy-backend'));
 backend.add(import('@backstage/plugin-scaffolder-backend'));
+backend.add(dynamicStandsModule);
 backend.add(import('@backstage/plugin-scaffolder-backend-module-github'));
 backend.add(
   import('@backstage/plugin-scaffolder-backend-module-notifications'),

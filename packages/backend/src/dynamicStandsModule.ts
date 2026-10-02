@@ -163,8 +163,6 @@ function createDynamicStandAction(token: string) {
         getContainerTags(token, 'manara-development', 'core_backend-django'),
         getContainerTags(token, 'liquidityhub-finance', 'front_fsd'),
       ]);
-      ctx.output('djangoTags', djangoTags);
-      ctx.output('frontTags', frontTags);
       if (!djangoTags.includes(djangoTag) || !frontTags.includes(frontTag)) {
         throw new Error(
           `Unknown image tag. Django tags: ${djangoTags.join(

@@ -117,6 +117,15 @@ applications:
     helmValues: |
       namespace: ${namespace}
       podLabels: { stand.liquidityhub.io/name: ${name} }
+      databaseClone:
+        enabled: true
+        source: { host: postgres.persistence.svc.cluster.local, port: 5432, username: postgres, password: changeme, database: app }
+        target:
+          host: ${releasePrefix}-postgre
+          port: 5432
+          username: postgres
+          passwordSecret: { name: ${releasePrefix}-postgre-secret, key: POSTGRES_PASSWORD }
+          database: app
       vault:
         secretPath: backend/ds-${name}
         profileClone:

@@ -75,40 +75,41 @@ async function getContainerTags(
 }
 
 function environmentYaml(name: string, djangoTag: string, frontTag: string) {
-  const domain = `${name}.tenv.online`;
+  const namespace = 'ds';
+  const domain = `${name}.ds.tenv.online`;
   return `repoURL: https://github.com/${argocdOwner}/${argocdRepo}.git
 targetRevision: main
 destinationServer: https://kubernetes.default.svc
 standName: ${name}
-standNamespace: ${name}
+standNamespace: ${namespace}
 applications:
   - name: ${name}-postgre
-    namespace: ${name}
+    namespace: ${namespace}
     chartPath: HelmCharts/DynamicPostgresChart
     valueFile: values_stage.yaml
     syncOptions: [CreateNamespace=true]
     annotations: { argocd.argoproj.io/sync-wave: '-20' }
     helmValues: |
-      namespace: ${name}
+      namespace: ${namespace}
       podLabels: { stand.liquidityhub.io/name: ${name} }
       backup: { enabled: false }
   - name: ${name}-dragonfly
-    namespace: ${name}
+    namespace: ${namespace}
     chartPath: HelmCharts/DynamicDragonflyChart
     valueFile: values_stage.yaml
     syncOptions: [CreateNamespace=true]
     annotations: { argocd.argoproj.io/sync-wave: '-20' }
     helmValues: |
-      namespace: ${name}
+      namespace: ${namespace}
       podLabels: { stand.liquidityhub.io/name: ${name} }
   - name: ${name}-django
-    namespace: ${name}
+    namespace: ${namespace}
     chartPath: HelmCharts/DjangoChart
     valueFile: values_stage.yaml
     syncOptions: [CreateNamespace=true, SkipDryRunOnMissingResource=true]
     annotations: { argocd.argoproj.io/sync-wave: '0' }
     helmValues: |
-      namespace: ${name}
+      namespace: ${namespace}
       podLabels: { stand.liquidityhub.io/name: ${name} }
       image:
         tag: ${djangoTag}
@@ -119,22 +120,22 @@ applications:
         - REDIS_URL=redis://${name}-dragonfly:6379/0
         - /start
       ingress:
-        hosts: [{ host: api.${domain}, paths: [{ path: /, pathType: Prefix }] }]
+        hosts: [{ host: api-${domain}, paths: [{ path: /, pathType: Prefix }] }]
   - name: ${name}-front-fsd
-    namespace: ${name}
+    namespace: ${namespace}
     chartPath: HelmCharts/FrontChart
     valueFile: values_fsd_stage.yaml
     syncOptions: [CreateNamespace=true, SkipDryRunOnMissingResource=true]
     annotations: { argocd.argoproj.io/sync-wave: '0' }
     helmValues: |
-      namespace: ${name}
+      namespace: ${namespace}
       podLabels: { stand.liquidityhub.io/name: ${name} }
       image:
         repository: ghcr.io/liquidityhub-finance/front_fsd
         tag: ${frontTag}
         imagePullSecrets: [{ name: ghcr-login-secret }]
       ingress:
-        hosts: [{ host: app.${domain}, paths: [{ path: /, pathType: Prefix }] }]
+        hosts: [{ host: app-${domain}, paths: [{ path: /, pathType: Prefix }] }]
 `;
 }
 

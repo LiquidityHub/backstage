@@ -89,21 +89,6 @@ destinationServer: https://kubernetes.default.svc
 standName: ${name}
 standNamespace: ${namespace}
 applications:
-  - name: ${releasePrefix}-vault-profile
-    namespace: ${namespace}
-    chartPath: HelmCharts/DynamicVaultProfileChart
-    valueFile: values.yaml
-    syncOptions: [CreateNamespace=true]
-    annotations: { argocd.argoproj.io/sync-wave: '-30' }
-    helmValues: |
-      namespace: ${namespace}
-      vault:
-        address: http://vault.infra.svc
-        secretPath: backend/ds-${name}
-      overrides:
-        djangoAllowedHosts: api-${domain}
-        djangoCorsAllowedOrigins: https://app-${domain}
-        djangoCorsAllowHeaders: X-Team-Id,idempotency-key
   - name: ${releasePrefix}-postgre
     namespace: ${namespace}
     chartPath: HelmCharts/DynamicPostgresChart
@@ -134,6 +119,13 @@ applications:
       podLabels: { stand.liquidityhub.io/name: ${name} }
       vault:
         secretPath: backend/ds-${name}
+        profileClone:
+          enabled: true
+          sourcePath: backend/stage
+          targetPath: backend/ds-${name}
+          djangoAllowedHosts: api-${domain}
+          djangoCorsAllowedOrigins: https://app-${domain}
+          djangoCorsAllowHeaders: X-Team-Id,idempotency-key
       image:
         tag: ${djangoTag}
         imagePullSecrets: [{ name: ghcr-login-secret }]

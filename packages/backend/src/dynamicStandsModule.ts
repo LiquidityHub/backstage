@@ -77,13 +77,19 @@ async function getContainerTags(
 function environmentYaml(name: string, djangoTag: string, frontTag: string) {
   const namespace = 'ds';
   const domain = `${name}.ds.tenv.online`;
+  // A DNS hostname label may start with a number, but Kubernetes resource
+  // names (Services, Ingress backends, etc.) may not. Keep the requested name
+  // in the URL and labels, while giving every Helm release a stable alphabetic
+  // prefix. Prefix every name (rather than only numeric names) to avoid
+  // collisions between e.g. "631-640" and "ds-631-640".
+  const releasePrefix = `ds-${name}`;
   return `repoURL: https://github.com/${argocdOwner}/${argocdRepo}.git
 targetRevision: main
 destinationServer: https://kubernetes.default.svc
 standName: ${name}
 standNamespace: ${namespace}
 applications:
-  - name: ${name}-postgre
+  - name: ${releasePrefix}-postgre
     namespace: ${namespace}
     chartPath: HelmCharts/DynamicPostgresChart
     valueFile: values_stage.yaml
@@ -93,7 +99,7 @@ applications:
       namespace: ${namespace}
       podLabels: { stand.liquidityhub.io/name: ${name} }
       backup: { enabled: false }
-  - name: ${name}-dragonfly
+  - name: ${releasePrefix}-dragonfly
     namespace: ${namespace}
     chartPath: HelmCharts/DynamicDragonflyChart
     valueFile: values_stage.yaml
@@ -102,7 +108,7 @@ applications:
     helmValues: |
       namespace: ${namespace}
       podLabels: { stand.liquidityhub.io/name: ${name} }
-  - name: ${name}-django
+  - name: ${releasePrefix}-django
     namespace: ${namespace}
     chartPath: HelmCharts/DjangoChart
     valueFile: values_stage.yaml
@@ -116,12 +122,12 @@ applications:
         imagePullSecrets: [{ name: ghcr-login-secret }]
       command:
         - env
-        - DATABASE_URL=postgres://postgres:changeme@${name}-postgre:5432/app
-        - REDIS_URL=redis://${name}-dragonfly:6379/0
+        - DATABASE_URL=postgres://postgres:changeme@${releasePrefix}-postgre:5432/app
+        - REDIS_URL=redis://${releasePrefix}-dragonfly:6379/0
         - /start
       ingress:
         hosts: [{ host: api-${domain}, paths: [{ path: /, pathType: Prefix }] }]
-  - name: ${name}-front-fsd
+  - name: ${releasePrefix}-front-fsd
     namespace: ${namespace}
     chartPath: HelmCharts/FrontChart
     valueFile: values_fsd_stage.yaml

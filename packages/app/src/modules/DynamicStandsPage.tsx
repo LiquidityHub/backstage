@@ -135,7 +135,18 @@ export function DynamicStandsPage() {
       <Content>
         <InfoCard
           title="Dynamic stands"
-          action={<Button onClick={loadStands}>Refresh</Button>}
+          action={
+            <>
+              <Button
+                color="primary"
+                href="/create/templates/default/create-dynamic-stand"
+                variant="contained"
+              >
+                Create stand
+              </Button>
+              <Button onClick={loadStands}>Refresh</Button>
+            </>
+          }
         >
           {error && <Alert severity="error">{error}</Alert>}
           {!stands && !error && <CircularProgress />}

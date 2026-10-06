@@ -40,6 +40,117 @@ type GitHubContent = {
   html_url?: string;
 };
 
+type DynamicStandStatus = {
+  phase: 'declared' | 'deploying' | 'ready' | 'error' | 'unknown';
+  message: string;
+  pods: { total: number; ready: number };
+};
+
+function podIsReady(pod: {
+  status?: { conditions?: Array<{ type?: string; status?: string }> };
+}) {
+  return pod.status?.conditions?.some(
+    condition => condition.type === 'Ready' && condition.status === 'True',
+  );
+}
+
+function podHasFailed(pod: {
+  status?: {
+    phase?: string;
+    initContainerStatuses?: Array<{
+      state?: {
+        waiting?: { reason?: string };
+        terminated?: { reason?: string };
+      };
+    }>;
+    containerStatuses?: Array<{
+      state?: {
+        waiting?: { reason?: string };
+        terminated?: { reason?: string };
+      };
+    }>;
+  };
+}) {
+  if (pod.status?.phase === 'Failed') return true;
+  const statuses = [
+    ...(pod.status?.initContainerStatuses ?? []),
+    ...(pod.status?.containerStatuses ?? []),
+  ];
+  return statuses.some(status => {
+    const reason =
+      status.state?.waiting?.reason ?? status.state?.terminated?.reason;
+    return Boolean(
+      reason &&
+        /CrashLoopBackOff|Error|ImagePullBackOff|ErrImagePull/.test(reason),
+    );
+  });
+}
+
+async function getDynamicStandStatuses(standNames: string[]) {
+  const { CoreV1Api, KubeConfig } = await import('@kubernetes/client-node');
+  const kubeConfig = new KubeConfig();
+  kubeConfig.loadFromCluster();
+  const client = kubeConfig.makeApiClient(CoreV1Api);
+  const response = await client.listNamespacedPod({
+    namespace: 'ds',
+    labelSelector: 'stand.liquidityhub.io/name',
+  });
+  const podsByStand = new Map<string, typeof response.items>();
+  for (const pod of response.items) {
+    const name = pod.metadata?.labels?.['stand.liquidityhub.io/name'];
+    if (!name || !standNames.includes(name)) continue;
+    const pods = podsByStand.get(name) ?? [];
+    pods.push(pod);
+    podsByStand.set(name, pods);
+  }
+
+  return new Map<string, DynamicStandStatus>(
+    standNames.map(name => {
+      const pods = podsByStand.get(name) ?? [];
+      const ready = pods.filter(podIsReady).length;
+      const podCount = pods.length;
+      if (podCount === 0) {
+        return [
+          name,
+          {
+            phase: 'declared',
+            message: 'Declared in Git; waiting for Argo CD to create pods.',
+            pods: { total: 0, ready: 0 },
+          },
+        ];
+      }
+      if (pods.some(podHasFailed)) {
+        return [
+          name,
+          {
+            phase: 'error',
+            message: `Pod startup failed (${ready}/${podCount} ready).`,
+            pods: { total: podCount, ready },
+          },
+        ];
+      }
+      if (ready === podCount) {
+        return [
+          name,
+          {
+            phase: 'ready',
+            message: `All pods are ready (${ready}/${podCount}).`,
+            pods: { total: podCount, ready },
+          },
+        ];
+      }
+      return [
+        name,
+        {
+          phase: 'deploying',
+          message: `Kubernetes is deploying (${ready}/${podCount} pods ready).`,
+          pods: { total: podCount, ready },
+        },
+      ];
+    }),
+  );
+}
+
 async function githubRequest<T>(
   token: string,
   path: string,
@@ -119,7 +230,28 @@ async function listDynamicStands(token: string) {
       };
     }),
   );
-  return stands.sort((a, b) => a.name.localeCompare(b.name));
+  const sortedStands = stands.sort((a, b) => a.name.localeCompare(b.name));
+  let statuses: Map<string, DynamicStandStatus>;
+  try {
+    statuses = await getDynamicStandStatuses(
+      sortedStands.map(stand => stand.name),
+    );
+  } catch {
+    statuses = new Map(
+      sortedStands.map(stand => [
+        stand.name,
+        {
+          phase: 'unknown' as const,
+          message: 'Kubernetes status is temporarily unavailable.',
+          pods: { total: 0, ready: 0 },
+        },
+      ]),
+    );
+  }
+  return sortedStands.map(stand => ({
+    ...stand,
+    status: statuses.get(stand.name),
+  }));
 }
 
 async function deleteDynamicStand(token: string, name: string) {

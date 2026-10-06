@@ -22,6 +22,7 @@ import {
 } from '@backstage/core-plugin-api';
 import Button from '@material-ui/core/Button';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import Chip from '@material-ui/core/Chip';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -41,6 +42,27 @@ type DynamicStand = {
   appUrl: string;
   apiUrl: string;
   fileUrl: string;
+  status?: {
+    phase: 'declared' | 'deploying' | 'ready' | 'error' | 'unknown';
+    message: string;
+    pods: { total: number; ready: number };
+  };
+};
+
+const statusColor = {
+  declared: '#78909c',
+  deploying: '#f9a825',
+  ready: '#43a047',
+  error: '#e53935',
+  unknown: '#78909c',
+};
+
+const statusLabel = {
+  declared: 'Declared',
+  deploying: 'Deploying',
+  ready: 'Ready',
+  error: 'Error',
+  unknown: 'Unknown',
 };
 
 async function responseError(response: Response) {
@@ -122,6 +144,7 @@ export function DynamicStandsPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>Stand</TableCell>
+                  <TableCell>Status</TableCell>
                   <TableCell>Application</TableCell>
                   <TableCell>API</TableCell>
                   <TableCell>Configuration</TableCell>
@@ -132,6 +155,23 @@ export function DynamicStandsPage() {
                 {stands.map(stand => (
                   <TableRow key={stand.name}>
                     <TableCell>{stand.name}</TableCell>
+                    <TableCell title={stand.status?.message}>
+                      <Chip
+                        label={
+                          stand.status
+                            ? `${statusLabel[stand.status.phase]} (${
+                                stand.status.pods.ready
+                              }/${stand.status.pods.total})`
+                            : 'Unknown'
+                        }
+                        size="small"
+                        style={{
+                          backgroundColor:
+                            statusColor[stand.status?.phase ?? 'unknown'],
+                          color: '#fff',
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Link
                         href={stand.appUrl}
@@ -172,7 +212,7 @@ export function DynamicStandsPage() {
                 ))}
                 {stands.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5}>No active dynamic stands.</TableCell>
+                    <TableCell colSpan={6}>No active dynamic stands.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

@@ -27951,6 +27951,7 @@ __metadata:
     "@backstage/plugin-signals-backend": "workspace:^"
     "@backstage/plugin-techdocs-backend": "workspace:^"
     "@backstage/plugin-user-settings-backend": "workspace:^"
+    "@kubernetes/client-node": "npm:1.4.0"
     "@opentelemetry/api": "npm:^1.9.0"
     "@opentelemetry/auto-instrumentations-node": "npm:^0.80.0"
     "@opentelemetry/core": "npm:^2.0.0"

@@ -31,6 +31,15 @@ type PackageVersion = {
   metadata?: { container?: { tags?: string[] } };
 };
 
+type GitHubContent = {
+  type: 'file' | 'dir';
+  name: string;
+  path: string;
+  sha: string;
+  content?: string;
+  html_url?: string;
+};
+
 async function githubRequest<T>(
   token: string,
   path: string,
@@ -72,6 +81,74 @@ async function getContainerTags(
       versions.flatMap(version => version.metadata?.container?.tags ?? []),
     ),
   ].sort();
+}
+
+async function listDynamicStands(token: string) {
+  const directory = 'environments/dynamic-stands';
+  const entries = await githubRequest<GitHubContent[]>(
+    token,
+    `/repos/${argocdOwner}/${argocdRepo}/contents/${directory}`,
+  );
+  const files = entries.filter(
+    entry =>
+      entry.type === 'file' &&
+      entry.name.endsWith('.yaml') &&
+      entry.name !== 'ds.yaml',
+  );
+  const stands = await Promise.all(
+    files.map(async entry => {
+      const file = await githubRequest<GitHubContent>(
+        token,
+        `/repos/${argocdOwner}/${argocdRepo}/contents/${entry.path
+          .split('/')
+          .map(encodeURIComponent)
+          .join('/')}`,
+      );
+      const yaml = Buffer.from(file.content ?? '', 'base64').toString('utf8');
+      const standName = yaml.match(/^standName:\s*([^\s#]+)\s*$/m)?.[1];
+      if (!standName || !/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(standName)) {
+        throw new Error(`Invalid dynamic stand definition: ${entry.path}`);
+      }
+      return {
+        name: standName,
+        apiUrl: `https://api-${standName}.ds.tenv.online`,
+        appUrl: `https://app-${standName}.ds.tenv.online`,
+        fileUrl:
+          file.html_url ??
+          `https://github.com/${argocdOwner}/${argocdRepo}/blob/main/${entry.path}`,
+      };
+    }),
+  );
+  return stands.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function deleteDynamicStand(token: string, name: string) {
+  if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(name)) {
+    throw new Error('Stand name must be a lowercase DNS label.');
+  }
+  if (name === 'ds') {
+    throw new Error(
+      'The base ds environment cannot be deleted from Backstage.',
+    );
+  }
+  const path = `environments/dynamic-stands/${name}.yaml`;
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  const file = await githubRequest<GitHubContent>(
+    token,
+    `/repos/${argocdOwner}/${argocdRepo}/contents/${encodedPath}`,
+  );
+  await githubRequest(
+    token,
+    `/repos/${argocdOwner}/${argocdRepo}/contents/${encodedPath}`,
+    {
+      method: 'DELETE',
+      body: JSON.stringify({
+        message: `Delete dynamic stand ${name}`,
+        sha: file.sha,
+        branch: 'main',
+      }),
+    },
+  );
 }
 
 function environmentYaml(name: string, djangoTag: string, frontTag: string) {
@@ -280,24 +357,45 @@ export const dynamicStandsModule = createBackendModule({
           createDynamicStandAction(token),
         );
         httpRouter.addAuthPolicy({
-          path: '/dynamic-stands/tags',
+          path: '/dynamic-stands',
           allow: 'user-cookie',
         });
         httpRouter.use(async (request, response, next) => {
-          if (request.path !== '/dynamic-stands/tags') {
-            next();
-            return;
-          }
           try {
-            const [djangoTags, frontTags] = await Promise.all([
-              getContainerTags(
+            if (
+              request.method === 'GET' &&
+              request.path === '/dynamic-stands/tags'
+            ) {
+              const [djangoTags, frontTags] = await Promise.all([
+                getContainerTags(
+                  token,
+                  'manara-development',
+                  'core_backend-django',
+                ),
+                getContainerTags(token, 'liquidityhub-finance', 'front_fsd'),
+              ]);
+              response.json({ djangoTags, frontTags });
+              return;
+            }
+            if (
+              request.method === 'GET' &&
+              request.path === '/dynamic-stands'
+            ) {
+              response.json({ stands: await listDynamicStands(token) });
+              return;
+            }
+            const deleteMatch = request.path.match(
+              /^\/dynamic-stands\/([^/]+)$/,
+            );
+            if (request.method === 'DELETE' && deleteMatch) {
+              await deleteDynamicStand(
                 token,
-                'manara-development',
-                'core_backend-django',
-              ),
-              getContainerTags(token, 'liquidityhub-finance', 'front_fsd'),
-            ]);
-            response.json({ djangoTags, frontTags });
+                decodeURIComponent(deleteMatch[1]),
+              );
+              response.status(204).end();
+              return;
+            }
+            next();
           } catch (error) {
             next(error);
           }

@@ -27,6 +27,7 @@ import {
 import { Link } from 'react-router-dom';
 import SearchIcon from '@material-ui/icons/Search';
 import MenuIcon from '@material-ui/icons/Menu';
+import ViewListIcon from '@material-ui/icons/ViewList';
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { NavContentBlueprint } from '@backstage/plugin-app-react';
 import { SidebarSearchModal } from '@backstage/plugin-search';
@@ -121,6 +122,11 @@ export const appModuleNav = createFrontendModule({
                 {nav.take('page:home')}
                 {nav.take('page:catalog')}
                 {nav.take('page:scaffolder')}
+                <SidebarItem
+                  icon={ViewListIcon}
+                  to="/dynamic-stands"
+                  text="Test stands"
+                />
                 <SidebarDivider />
                 <SidebarScrollWrapper>
                   {nav.rest({ sortBy: 'title' })}

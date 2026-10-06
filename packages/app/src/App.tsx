@@ -33,6 +33,7 @@ import { convertLegacyAppRoot } from '@backstage/core-compat-api';
 import { FlatRoutes } from '@backstage/core-app-api';
 import { Route } from 'react-router';
 import { CatalogImportPage } from '@backstage/plugin-catalog-import';
+import { DynamicStandsPage } from './modules/DynamicStandsPage';
 import kubernetesPlugin from '@backstage/plugin-kubernetes/alpha';
 import { convertLegacyPlugin } from '@backstage/core-compat-api';
 import { convertLegacyPageExtension } from '@backstage/core-compat-api';
@@ -81,6 +82,7 @@ const notFoundErrorPageModule = createFrontendModule({
 const collectedLegacyPlugins = convertLegacyAppRoot(
   <FlatRoutes>
     <Route path="/catalog-import" element={<CatalogImportPage />} />
+    <Route path="/dynamic-stands" element={<DynamicStandsPage />} />
   </FlatRoutes>,
 );
 

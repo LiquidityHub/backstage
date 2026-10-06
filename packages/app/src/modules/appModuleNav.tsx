@@ -20,19 +20,16 @@ import {
   SidebarDivider,
   SidebarGroup,
   SidebarItem,
-  SidebarScrollWrapper,
-  SidebarSpace,
   useSidebarOpenState,
 } from '@backstage/core-components';
 import { Link } from 'react-router-dom';
+import HomeIcon from '@material-ui/icons/Home';
 import SearchIcon from '@material-ui/icons/Search';
 import MenuIcon from '@material-ui/icons/Menu';
 import ViewListIcon from '@material-ui/icons/ViewList';
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { NavContentBlueprint } from '@backstage/plugin-app-react';
 import { SidebarSearchModal } from '@backstage/plugin-search';
-import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
-import { UserSettingsSignInAvatar } from '@backstage/plugin-user-settings';
 import { makeStyles } from '@material-ui/core/styles';
 
 const useSidebarLogoStyles = makeStyles({
@@ -119,7 +116,7 @@ export const appModuleNav = createFrontendModule({
               </SidebarGroup>
               <SidebarDivider />
               <SidebarGroup label="Menu" icon={<MenuIcon />}>
-                {nav.take('page:home')}
+                <SidebarItem icon={HomeIcon} to="/" text="Home" />
                 {nav.take('page:catalog')}
                 {nav.take('page:scaffolder')}
                 <SidebarItem
@@ -127,22 +124,6 @@ export const appModuleNav = createFrontendModule({
                   to="/dynamic-stands"
                   text="Test stands"
                 />
-                <SidebarDivider />
-                <SidebarScrollWrapper>
-                  {nav.rest({ sortBy: 'title' })}
-                </SidebarScrollWrapper>
-              </SidebarGroup>
-              <SidebarDivider />
-              <SidebarSpace />
-              <SidebarDivider />
-              <SidebarGroup
-                label="Settings"
-                icon={<UserSettingsSignInAvatar />}
-                to="/settings"
-              >
-                <NotificationsSidebarItem />
-                {nav.take('page:devtools')}
-                {nav.take('page:user-settings')}
               </SidebarGroup>
             </Sidebar>
           );

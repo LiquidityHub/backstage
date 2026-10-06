@@ -17,10 +17,8 @@
 import { createApp } from '@backstage/frontend-defaults';
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { appModuleKeycloak } from './modules/appModuleKeycloak';
-import { pagesPlugin } from './examples/pagesPlugin';
 import notFoundErrorPage from './examples/notFoundErrorPageExtension';
 import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
-import homePlugin from '@backstage/plugin-home/alpha';
 
 import {
   techdocsPlugin,
@@ -34,13 +32,13 @@ import { FlatRoutes } from '@backstage/core-app-api';
 import { Route } from 'react-router';
 import { CatalogImportPage } from '@backstage/plugin-catalog-import';
 import { DynamicStandsPage } from './modules/DynamicStandsPage';
+import { PlatformHomePage } from './modules/PlatformHomePage';
 import kubernetesPlugin from '@backstage/plugin-kubernetes/alpha';
 import { convertLegacyPlugin } from '@backstage/core-compat-api';
 import { convertLegacyPageExtension } from '@backstage/core-compat-api';
 import { convertLegacyEntityContentExtension } from '@backstage/plugin-catalog-react/alpha';
 import { pluginInfoResolver } from './pluginInfoResolver';
 import { appModuleNav } from './modules/appModuleNav';
-import { appModuleHome } from './modules/appModuleHome';
 import { appModuleScaffolder } from './modules/appModuleScaffolder';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import InfoIcon from '@material-ui/icons/Info';
@@ -81,6 +79,7 @@ const notFoundErrorPageModule = createFrontendModule({
 
 const collectedLegacyPlugins = convertLegacyAppRoot(
   <FlatRoutes>
+    <Route path="/" element={<PlatformHomePage />} />
     <Route path="/catalog-import" element={<CatalogImportPage />} />
     <Route path="/dynamic-stands" element={<DynamicStandsPage />} />
   </FlatRoutes>,
@@ -90,15 +89,12 @@ const app = createApp({
   features: [
     appModuleKeycloak,
     customizedCatalog,
-    pagesPlugin,
     convertedTechdocsPlugin,
     userSettingsPlugin,
-    homePlugin,
     appVisualizerPlugin,
     kubernetesPlugin,
     notFoundErrorPageModule,
     appModuleNav,
-    appModuleHome,
     appModuleScaffolder,
     ...collectedLegacyPlugins,
   ],

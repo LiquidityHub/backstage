@@ -46,6 +46,7 @@ type DynamicStand = {
     phase: 'declared' | 'deploying' | 'ready' | 'error' | 'unknown';
     message: string;
     pods: { total: number; ready: number };
+    logs?: { api?: string; frontend?: string };
   };
 };
 
@@ -158,6 +159,7 @@ export function DynamicStandsPage() {
                   <TableCell>Status</TableCell>
                   <TableCell>Application</TableCell>
                   <TableCell>API</TableCell>
+                  <TableCell>Logs</TableCell>
                   <TableCell>Configuration</TableCell>
                   <TableCell align="right">Action</TableCell>
                 </TableRow>
@@ -202,6 +204,32 @@ export function DynamicStandsPage() {
                       </Link>
                     </TableCell>
                     <TableCell>
+                      {stand.status?.logs?.api && (
+                        <Link
+                          href={stand.status.logs.api}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          API
+                        </Link>
+                      )}
+                      {stand.status?.logs?.api &&
+                        stand.status?.logs?.frontend &&
+                        ' · '}
+                      {stand.status?.logs?.frontend && (
+                        <Link
+                          href={stand.status.logs.frontend}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Frontend
+                        </Link>
+                      )}
+                      {!stand.status?.logs?.api &&
+                        !stand.status?.logs?.frontend &&
+                        '—'}
+                    </TableCell>
+                    <TableCell>
                       <Link
                         href={stand.fileUrl}
                         target="_blank"
@@ -223,7 +251,7 @@ export function DynamicStandsPage() {
                 ))}
                 {stands.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6}>No active dynamic stands.</TableCell>
+                    <TableCell colSpan={7}>No active dynamic stands.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

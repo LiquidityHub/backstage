@@ -44,7 +44,14 @@ type DynamicStandStatus = {
   phase: 'declared' | 'deploying' | 'ready' | 'error' | 'unknown';
   message: string;
   pods: { total: number; ready: number };
+  logs?: { api?: string; frontend?: string };
 };
+
+function grafanaLogsUrl(podName: string) {
+  return `https://grafana.tenv.online/d/kubernetes-container-logs/kubernetes-container-logs?orgId=1&refresh=5s&var-DS_LOKI=P8E80F9AEF21F6940&var-namespace=ds&var-pod=${encodeURIComponent(
+    podName,
+  )}&var-container=All&var-search=.%2A`;
+}
 
 function podIsReady(pod: {
   status?: { conditions?: Array<{ type?: string; status?: string }> };
@@ -109,6 +116,20 @@ async function getDynamicStandStatuses(standNames: string[]) {
       const pods = podsByStand.get(name) ?? [];
       const ready = pods.filter(podIsReady).length;
       const podCount = pods.length;
+      const djangoPod = pods.find(pod =>
+        pod.metadata?.name?.includes('-django-'),
+      );
+      const frontendPod = pods.find(pod =>
+        pod.metadata?.name?.includes('-front-fsd-'),
+      );
+      const logs = {
+        ...(djangoPod?.metadata?.name && {
+          api: grafanaLogsUrl(djangoPod.metadata.name),
+        }),
+        ...(frontendPod?.metadata?.name && {
+          frontend: grafanaLogsUrl(frontendPod.metadata.name),
+        }),
+      };
       if (podCount === 0) {
         return [
           name,
@@ -116,6 +137,7 @@ async function getDynamicStandStatuses(standNames: string[]) {
             phase: 'declared',
             message: 'Declared in Git; waiting for Argo CD to create pods.',
             pods: { total: 0, ready: 0 },
+            logs,
           },
         ];
       }
@@ -126,6 +148,7 @@ async function getDynamicStandStatuses(standNames: string[]) {
             phase: 'error',
             message: `Pod startup failed (${ready}/${podCount} ready).`,
             pods: { total: podCount, ready },
+            logs,
           },
         ];
       }
@@ -136,6 +159,7 @@ async function getDynamicStandStatuses(standNames: string[]) {
             phase: 'ready',
             message: `All pods are ready (${ready}/${podCount}).`,
             pods: { total: podCount, ready },
+            logs,
           },
         ];
       }
@@ -145,6 +169,7 @@ async function getDynamicStandStatuses(standNames: string[]) {
           phase: 'deploying',
           message: `Kubernetes is deploying (${ready}/${podCount} pods ready).`,
           pods: { total: podCount, ready },
+          logs,
         },
       ];
     }),

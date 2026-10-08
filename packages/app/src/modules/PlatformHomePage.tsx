@@ -21,7 +21,11 @@ import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
 import AppsIcon from '@material-ui/icons/Apps';
+import AssessmentIcon from '@material-ui/icons/Assessment';
+import LockIcon from '@material-ui/icons/Lock';
+import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import StorageIcon from '@material-ui/icons/Storage';
+import VpnKeyIcon from '@material-ui/icons/VpnKey';
 
 const useStyles = makeStyles(theme => ({
   hero: {
@@ -43,6 +47,11 @@ const useStyles = makeStyles(theme => ({
   cardText: {
     minHeight: 56,
     marginBottom: theme.spacing(2),
+  },
+  platformTools: {
+    display: 'flex',
+    gap: theme.spacing(1),
+    flexWrap: 'wrap',
   },
 }));
 
@@ -125,6 +134,49 @@ export function PlatformHomePage() {
               >
                 Open catalog
               </Button>
+            </InfoCard>
+          </Grid>
+          <Grid item xs={12}>
+            <InfoCard title="Platform tools">
+              <Typography className={classes.cardText} variant="body2">
+                Operational tools are available here for investigating logs,
+                managing access, and working with secrets.
+              </Typography>
+              <div className={classes.platformTools}>
+                <Button
+                  color="primary"
+                  endIcon={<OpenInNewIcon />}
+                  href="https://grafana.tenv.online"
+                  startIcon={<AssessmentIcon />}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="outlined"
+                >
+                  Grafana
+                </Button>
+                <Button
+                  color="primary"
+                  endIcon={<OpenInNewIcon />}
+                  href="https://vault.tenv.online"
+                  startIcon={<LockIcon />}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="outlined"
+                >
+                  Vault
+                </Button>
+                <Button
+                  color="primary"
+                  endIcon={<OpenInNewIcon />}
+                  href="https://keycloak.tenv.online"
+                  startIcon={<VpnKeyIcon />}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="outlined"
+                >
+                  Keycloak
+                </Button>
+              </div>
             </InfoCard>
           </Grid>
         </Grid>

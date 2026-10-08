@@ -392,6 +392,14 @@ applications:
         repository: ghcr.io/liquidityhub-finance/front_fsd
         tag: ${frontTag}
         imagePullSecrets: [{ name: ghcr-login-secret }]
+      vault:
+        enabled: true
+        secretPath: front/ds-${name}
+        profileClone:
+          enabled: true
+          sourcePath: front/stage
+          targetPath: front/ds-${name}
+          viteAppBaseApiUrl: https://api-${domain}
       ingress:
         hosts: [{ host: app-${domain}, paths: [{ path: /, pathType: Prefix }] }]
 `;
